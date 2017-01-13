@@ -231,6 +231,7 @@
             this.map.on('mousemove touchmove', editor.onDrawingMouseMove, editor);
             this.map.on('mousedown', this.onMousedown, this);
             this.map.on('mouseup', this.onMouseup, this);
+            this.map.on('click', this.onClick, this);
             L.DomUtil.addClass(this.map._container, this.options.drawingCSSClass);
             this.defaultMapCursor = this.map._container.style.cursor;
             this.map._container.style.cursor = this.options.drawingCursor;
@@ -245,14 +246,26 @@
             this.map.off('mousemove touchmove', editor.onDrawingMouseMove, editor);
             this.map.off('mousedown', this.onMousedown, this);
             this.map.off('mouseup', this.onMouseup, this);
+            this.map.off('click', this.onClick, this);
             if (editor !== this._drawingEditor) return;
             delete this._drawingEditor;
             if (editor._drawing) editor.cancelDrawing();
         },
 
+        spamClickHandeler: false,
+        onClick: function (e) {
+			if (!this.spamClickHandeler) {
+				this.onMousedown(e);
+				this.onMouseup(e);
+			}
+		},
+        
         onMousedown: function (e) {
-            this._mouseDown = e;
-            this._drawingEditor.onDrawingMouseDown(e);
+            if (!this.spamClickHandeler) {
+                this.spamClickHandeler = true;
+                this._mouseDown = e;
+                this._drawingEditor.onDrawingMouseDown(e);
+            }
         },
 
         onMouseup: function (e) {
@@ -265,6 +278,10 @@
                 var origin = L.point(mouseDown.originalEvent.clientX, mouseDown.originalEvent.clientY);
                 var distance = L.point(e.originalEvent.clientX, e.originalEvent.clientY).distanceTo(origin);
                 if (Math.abs(distance) < 9 * (window.devicePixelRatio || 1)) this._drawingEditor.onDrawingClick(e);
+                
+                setTimeout(() => {
+					this.spamClickHandeler = false;
+				}, 200);
             }
         },
 
